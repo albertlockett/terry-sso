@@ -13,6 +13,7 @@ async fn main() -> std::io::Result<()> {
       .wrap(cors)
       .route("/oauth2/authorize", web::get().to(redir_to_login))
       .route("/oauth2/login", web::post().to(handle_login))
+      .route("/oauth2/token", web::post().to(handle_token))
   });
 
   server.bind("127.0.0.1:4000")
@@ -52,4 +53,9 @@ async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
   HttpResponse::Found()
     .header("Location", format!("{}?code={}", params.callback_url.clone(), code))
     .finish()
+}
+
+
+pub fn handle_token() -> HttpResponse {
+  HttpResponse::Ok().body("all good bb")
 }

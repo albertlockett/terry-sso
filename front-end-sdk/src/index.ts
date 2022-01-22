@@ -7,10 +7,34 @@ type LoginParams = {
  */
 export async function doLogin(params: LoginParams) {
   const verifier = new Verifier();
-  // TODO - do something with verifier
+  document.cookie = `terry_auth=${verifier}; new Date(new Date().getTime() + 300_000); path=/`;
 
   const challenge = await verifier.getChallenge();
   window.location = `http://localhost:4000/oauth2/authorize?challenge=${challenge}&callback_url=${params.callbackUrl}`;
+}
+
+type ExchangeCodeParams = {
+  code: string;
+};
+
+type ExchangeCodeResponse = {
+  access_token: string;
+  id_token: string;
+};
+
+export async function exchangeCode(
+  params: ExchangeCodeParams
+): ExchangeCodeResponse {
+  console.log({ params });
+  const verifier = document.cookie
+    .split(';')
+    .map((s) => s.trim())
+    .find((c) => c.startsWith('terry_auth'))
+    .replace('terry_auth=', '');
+  const response = await fetch('http://localhost:4000/oauth2/token', {
+    method: 'POST'
+  });
+  console.log(await response.text());
 }
 
 /**
