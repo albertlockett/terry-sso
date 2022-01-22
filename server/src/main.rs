@@ -24,10 +24,10 @@ pub struct AuthorizeParams {
     challenge: String,
 }
 
-fn redir_to_login(req: HttpRequest) -> HttpResponse {
+async fn redir_to_login(req: HttpRequest) -> HttpResponse {
   let params = web::Query::<AuthorizeParams>::from_query(req.query_string()).unwrap();
   println!("challenge = {:?}", params.challenge);
-  dao::store_challenge(&params.challenge);
+  dao::store_challenge(&params.challenge).await;
   HttpResponse::Found()
     .header("Location", "http://localhost:1234")
     .finish()
