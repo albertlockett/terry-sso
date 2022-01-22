@@ -1,6 +1,7 @@
 use actix_cors::Cors;
-use actix_web::{web, App, FromRequest, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use serde::{Deserialize};
+use uuid::Uuid;
 
 mod dao;
 
@@ -44,8 +45,11 @@ pub struct PasswordFormValues {
 }
 
 async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
-  println!("{:?}", params);
+  // TODO check if the challenge exists
+  // TODO check if the username and password is correct
+  let code = format!("{}", Uuid::new_v4());
+  dao::store_code(&code, &params.challenge).await;
   HttpResponse::Found()
-    .header("Location", params.callback_url.clone())
+    .header("Location", format!("{}?code={}", params.callback_url.clone(), code))
     .finish()
 }
