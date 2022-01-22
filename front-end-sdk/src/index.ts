@@ -5,7 +5,8 @@ export async function doLogin() {
   const verifier = new Verifier();
   // TODO - do something with verifier
 
-  window.location = 'http://localhost:4000/oauth2/authorize';
+  const challenge = await verifier.getChallenge();
+  window.location = `http://localhost:4000/oauth2/authorize?challenge=${challenge}`;
 }
 
 /**
