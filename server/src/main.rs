@@ -23,6 +23,7 @@ async fn main() -> std::io::Result<()> {
 #[derive(Debug, Deserialize)]
 pub struct AuthorizeParams {
   challenge: String,
+  callback_url: String,
 }
 
 async fn redir_to_login(req: HttpRequest) -> HttpResponse {
@@ -30,7 +31,7 @@ async fn redir_to_login(req: HttpRequest) -> HttpResponse {
   println!("challenge = {:?}", params.challenge);
   dao::store_challenge(&params.challenge).await;
   HttpResponse::Found()
-    .header("Location", format!("http://localhost:1234?challenge={}", params.challenge))
+    .header("Location", format!("http://localhost:1234?challenge={}&callbackUrl={}", params.challenge, params.callback_url))
     .finish()
 }
 
@@ -39,11 +40,12 @@ pub struct PasswordFormValues {
   username: String,
   password: String,
   challenge: String,
+  callback_url: String,
 }
 
 async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
   println!("{:?}", params);
   HttpResponse::Found()
-    .header("Location", "http://localhost:1234")
+    .header("Location", params.callback_url.clone())
     .finish()
 }

@@ -6,6 +6,7 @@ import './styles.scss';
 function App() {
   const params = new URLSearchParams(window.location.search);
   const challenge = params.get('challenge');
+  const callbackUrl = params.get('callbackUrl');
   return (
     <div className="login-page">
       <h1>Login</h1>
@@ -17,6 +18,7 @@ function App() {
         <input type="password" name="password" />
         <br />
         <input type="hidden" name="challenge" value={challenge} />
+        <input type="hidden" name="callback_url" value={callbackUrl} />
         <button>OK</button>
       </form>
     </div>

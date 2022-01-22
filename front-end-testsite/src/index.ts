@@ -4,7 +4,9 @@ const button = document.getElementById('login');
 button.addEventListener(
   'click',
   function () {
-    sdk.doLogin();
+    sdk.doLogin({
+      callbackUrl: `${window.location.origin}/callback`
+    });
   },
   false
 );

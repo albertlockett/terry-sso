@@ -1,12 +1,16 @@
+type LoginParams = {
+  callbackUrl: string;
+};
+
 /**
  * do the login
  */
-export async function doLogin() {
+export async function doLogin(params: LoginParams) {
   const verifier = new Verifier();
   // TODO - do something with verifier
 
   const challenge = await verifier.getChallenge();
-  window.location = `http://localhost:4000/oauth2/authorize?challenge=${challenge}`;
+  window.location = `http://localhost:4000/oauth2/authorize?challenge=${challenge}&callback_url=${params.callbackUrl}`;
 }
 
 /**
