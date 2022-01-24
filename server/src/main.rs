@@ -1,6 +1,8 @@
 use actix_cors::Cors;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use base64;
 use serde::{Deserialize};
+use sha2::{Sha256, Digest};
 use uuid::Uuid;
 
 mod dao;
@@ -52,8 +54,9 @@ pub struct PasswordFormValues {
 }
 
 async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
-  let challenge_exists = dao::challenge_exists(&params.challenge).await;
-  if !challenge_exists {
+  // check that the code is valid ...
+  let challenge = dao::get_challenge(&params.challenge).await;
+  if matches!(challenge, None) {
     // TODO test this
     // design decision - redirect to callback url to tell user they biffed it
     // or send them back to the login screen?
@@ -61,14 +64,36 @@ async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
       "http://localhost:1234?challenge={}&callbackUrl={}&error={}", 
       params.challenge,
       params.callback_url,
-      "invalid challenge"
+      "invalid_challenge"
     );
     return HttpResponse::Found()
       .header("Location", location)
       .finish()
   }
 
-  // TODO check if the username and password is correct
+  // check that the user supplied valid credentials
+  // don't do this irl - it's not a very smart way to check creds
+  let valid_credentials: bool;
+  let password = dao::get_password(&params.username).await;
+  println!("{:?}", password);
+
+  if matches!(password, None) {
+    valid_credentials = false; // no user found
+  } else {
+    valid_credentials = params.password == password.unwrap();
+  }
+  if valid_credentials == false {
+    let location = format!(
+      "http://localhost:1234?challenge={}&callbackUrl={}&error={}", 
+      params.challenge,
+      params.callback_url,
+      "invalid_credentials"
+    );
+    return HttpResponse::Found()
+      .header("Location", location)
+      .finish()
+  }
+  
   let code = format!("{}", Uuid::new_v4());
   dao::store_code(&code, &params.challenge).await;
   HttpResponse::Found()
@@ -83,19 +108,37 @@ pub struct TokenFormValues {
 }
 
 async fn handle_token(params: web::Json::<TokenFormValues>) -> HttpResponse {
-  let code_exists = dao::code_exists(&params.code).await;
-  if !code_exists {
+  let code = dao::get_code(&params.code).await;
+  if matches!(code, None) {
     return HttpResponse::BadRequest()
       .header("content-type", "application/json")
-      .body("{\"error\": \"Invalid code\"}")
+      .body("{\"error\": \"invalid_code\"}")
   }
-
-  // TODO get code info
-  // TODO verify code
-
+  
+  let challenge = code.unwrap().challenge;
+  if !is_valid_verifier(&params.verifier, &challenge) {
+    return HttpResponse::BadRequest()
+      .header("content-type", "application/json")
+      .body("{\"error\": \"invalid_verifier\"}")
+  }
 
   let access_token = token::generate_token("cheese2");
   HttpResponse::Ok()
     .header("content-type", "application/json")
     .body(format!("{{\"access_token\": \"{}\"}}", access_token))
+}
+
+
+fn is_valid_verifier(verifier: &str, challenge: &str) -> bool {
+  println!("{:?}", challenge);
+  let decoded_challenge = base64::decode(challenge).unwrap();
+
+  let mut hasher = Sha256::new();
+  hasher.update(verifier);
+  let result = hasher.finalize();
+
+  println!("decoded challenge {:?}", decoded_challenge);
+  println!("result = {:?}", result);
+
+  result.to_vec() == decoded_challenge
 }
