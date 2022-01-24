@@ -4,6 +4,7 @@ use serde::{Deserialize};
 use uuid::Uuid;
 
 mod dao;
+mod token;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -32,8 +33,13 @@ async fn redir_to_login(req: HttpRequest) -> HttpResponse {
   let params = web::Query::<AuthorizeParams>::from_query(req.query_string()).unwrap();
   println!("challenge = {:?}", params.challenge);
   dao::store_challenge(&params.challenge).await;
+  let redirect_location = format!(
+      "http://localhost:1234?challenge={}&callbackUrl={}", 
+      params.challenge, 
+      params.callback_url
+  );
   HttpResponse::Found()
-    .header("Location", format!("http://localhost:1234?challenge={}&callbackUrl={}", params.challenge, params.callback_url))
+    .header("Location", redirect_location)
     .finish()
 }
 
@@ -46,7 +52,22 @@ pub struct PasswordFormValues {
 }
 
 async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
-  // TODO check if the challenge exists
+  let challenge_exists = dao::challenge_exists(&params.challenge).await;
+  if !challenge_exists {
+    // TODO test this
+    // design decision - redirect to callback url to tell user they biffed it
+    // or send them back to the login screen?
+    let location = format!(
+      "http://localhost:1234?challenge={}&callbackUrl={}&error={}", 
+      params.challenge,
+      params.callback_url,
+      "invalid challenge"
+    );
+    return HttpResponse::Found()
+      .header("Location", location)
+      .finish()
+  }
+
   // TODO check if the username and password is correct
   let code = format!("{}", Uuid::new_v4());
   dao::store_code(&code, &params.challenge).await;
@@ -55,7 +76,26 @@ async fn handle_login(params: web::Form::<PasswordFormValues>) -> HttpResponse {
     .finish()
 }
 
+#[derive(Debug, Deserialize)]
+pub struct TokenFormValues {
+  code: String,
+  verifier: String
+}
 
-pub fn handle_token() -> HttpResponse {
-  HttpResponse::Ok().body("all good bb")
+async fn handle_token(params: web::Json::<TokenFormValues>) -> HttpResponse {
+  let code_exists = dao::code_exists(&params.code).await;
+  if !code_exists {
+    return HttpResponse::BadRequest()
+      .header("content-type", "application/json")
+      .body("{\"error\": \"Invalid code\"}")
+  }
+
+  // TODO get code info
+  // TODO verify code
+
+
+  let access_token = token::generate_token("cheese2");
+  HttpResponse::Ok()
+    .header("content-type", "application/json")
+    .body(format!("{{\"access_token\": \"{}\"}}", access_token))
 }

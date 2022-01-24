@@ -32,7 +32,9 @@ export async function exchangeCode(
     .find((c) => c.startsWith('terry_auth'))
     .replace('terry_auth=', '');
   const response = await fetch('http://localhost:4000/oauth2/token', {
-    method: 'POST'
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code: params.code, verifier })
   });
   console.log(await response.text());
 }

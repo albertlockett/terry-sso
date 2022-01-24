@@ -2073,8 +2073,10 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-web",
+ "base64",
  "rust-s3",
  "serde",
+ "serde_json",
  "uuid",
 ]
 
