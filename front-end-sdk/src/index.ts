@@ -44,13 +44,15 @@ export async function exchangeCode(
  */
 export class Verifier {
   constructor() {
-    this.array = new Uint8Array(64);
+    this.array = new Uint8Array(32);
     window.crypto.getRandomValues(this.array);
     this.getChallenge = this.getChallenge.bind(this);
   }
 
   async getChallenge(): string {
-    return toBase64(await sha256(this.array));
+    let sha = await sha256(this.array);
+    console.log('sha', sha);
+    return toBase64(sha);
   }
 
   toString() {
@@ -70,5 +72,5 @@ function toBase64(bytes: Uint8Array): string {
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return window.btoa(binary);
+  return window.btoa(binary).replaceAll(' ', '+');
 }

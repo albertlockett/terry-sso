@@ -5,7 +5,51 @@ body {
 }
 
 .login-page {
-  // margin: auto;
-  // width: 100vw;
-  // height: 100vh;
+  text-align: center;
+  .error {
+    color: red;
+    margin: 10px;
+    font-size: 20px;
+    font-weight: 200;
+    text-transform: uppercase;
+  }
+
+  .form {
+    label {
+      color: purple;
+      font-family: "Comic Sans MS", "Comic Sans", cursive;
+      -webkit-animation: 2s linear infinite condemned_blink_effect; /* for Safari 4.0 - 8.0 */
+      animation: 0.5s linear infinite condemned_blink_effect;
+    }
+  }
+
+  .pics {
+    margin-top: 24px;
+    text-align: center;
+  }
+}
+
+/* for Safari 4.0 - 8.0 */
+@-webkit-keyframes condemned_blink_effect {
+  0% {
+    visibility: hidden;
+  }
+  50% {
+    visibility: hidden;
+  }
+  100% {
+    visibility: visible;
+  }
+}
+
+@keyframes condemned_blink_effect {
+  0% {
+    visibility: hidden;
+  }
+  50% {
+    visibility: hidden;
+  }
+  100% {
+    visibility: visible;
+  }
 }
