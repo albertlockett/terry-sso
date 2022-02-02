@@ -1,0 +1,6 @@
+steps:
+  # frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', './server/Dockerfile', '--build-arg', '-t', 'gcr.io/albertlockett-test2/terry-sso-server:latest', './server']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/albertlockett-test2/terry-sso-server:latest']
