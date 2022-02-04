@@ -12,7 +12,6 @@ let token = '';
   // TODO error checking on code
 
   const result = await sdk.exchangeCode({ code });
-  console.log({ result });
   token = result.access_token;
 })();
 
@@ -21,7 +20,9 @@ button.addEventListener(
   'click',
   function () {
     sdk.doLogin({
-      callbackUrl: `${window.location.origin}/callback`
+      callbackUrl: `${window.location.origin}/callback`,
+      scopes: ['openid', 'email', 'read_data'],
+      audience: 'https://some-service.example.com'
     });
   },
   false

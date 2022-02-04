@@ -13,15 +13,13 @@ use serde_json;
 pub struct Session {
     pub challenge: String,
     pub callback_url: String,
+    pub audience: String,
+    pub scopes: String,
 }
 
-pub async fn store_session(session_id: &str, challenge: &str, callback_url: &str) {
+pub async fn store_session(session_id: &str, session: Session) {
     let bucket = get_bucket();
-    let content = serde_json::to_string(&Session {
-        challenge: String::from(challenge),
-        callback_url: String::from(callback_url),
-    })
-    .unwrap();
+    let content = serde_json::to_string(&session).unwrap();
     let result = bucket
         .put_object(format!("{}", session_id), content.as_bytes())
         .await;

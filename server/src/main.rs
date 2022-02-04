@@ -30,14 +30,23 @@ async fn main() -> std::io::Result<()> {
 pub struct AuthorizeParams {
     challenge: String,
     callback_url: String,
+    audience: String,
+    scopes: String,
 }
 
 async fn redir_to_login(req: HttpRequest) -> HttpResponse {
     let params = web::Query::<AuthorizeParams>::from_query(req.query_string()).unwrap();
-    println!("challenge = {:?}", params.challenge);
-
     let session_id = Uuid::new_v4().to_string();
-    dao::store_session(&session_id, &params.challenge, &params.callback_url).await;
+    dao::store_session(
+        &session_id,
+        dao::Session {
+            challenge: params.challenge.clone(),
+            callback_url: params.callback_url.clone(),
+            audience: params.audience.clone(),
+            scopes: params.scopes.clone(),
+        },
+    )
+    .await;
     let redirect_location = format!("http://localhost:1234?session_id={}", session_id,);
     HttpResponse::Found()
         .header("Location", redirect_location)
@@ -71,6 +80,9 @@ async fn handle_login(params: web::Form<PasswordFormValues>) -> HttpResponse {
         );
         return HttpResponse::Found().header("Location", location).finish();
     }
+
+    println!("scopes = {:?}", session.scopes);
+    println!("audience = {:?}", session.audience);
 
     // store the code and redirect user w/ code
     let code = format!("{}", Uuid::new_v4());
@@ -134,14 +146,9 @@ async fn handle_token(params: web::Json<TokenFormValues>) -> HttpResponse {
 }
 
 fn is_valid_verifier(verifier: &str, challenge: &str) -> bool {
-    println!("{:?}", verifier);
     let decoded_verifier = base64::decode(verifier).unwrap();
     let mut hasher = Sha256::new();
     hasher.update(decoded_verifier);
-    let hashed_verifier = hasher.finalize();
-    let hashed_verifier_b64 =  base64::encode(hashed_verifier);
-
-    println!("challenge = {:?}", challenge);
-    println!("vv2 = {:?}", hashed_verifier_b64);
-    hashed_verifier_b64 == challenge
+    let verifier_hashed_b64 = base64::encode(hasher.finalize());
+    verifier_hashed_b64 == challenge
 }

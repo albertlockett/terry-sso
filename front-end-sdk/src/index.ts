@@ -1,16 +1,20 @@
 type LoginParams = {
   callbackUrl: string;
+  audience?: string;
+  scopes?: string[];
 };
 
-/**
- * do the login
- */
 export async function doLogin(params: LoginParams) {
+  // store the verifier in the cookie for later use.
+  // It expires in 5 minutes, hopefully it doesn't take that long for users to type their password etc.
   const verifier = new Verifier();
   document.cookie = `terry_auth=${verifier}; new Date(new Date().getTime() + 300_000); path=/`;
 
   const challenge = await verifier.getChallenge();
-  window.location = `http://localhost:4000/oauth2/authorize?challenge=${challenge}&callback_url=${params.callbackUrl}`;
+  let queryString = `challenge=${challenge}&callback_url=${params.callbackUrl}`;
+  queryString += `&audience=${params.audience ?? ''}`;
+  queryString += `&scopes=${params.scopes?.join(',') ?? ''}`;
+  window.location = `http://localhost:4000/oauth2/authorize?${queryString}`;
 }
 
 type ExchangeCodeParams = {
@@ -25,18 +29,23 @@ type ExchangeCodeResponse = {
 export async function exchangeCode(
   params: ExchangeCodeParams
 ): ExchangeCodeResponse {
-  console.log({ params });
-  const verifier = document.cookie
-    .split(';')
-    .map((s) => s.trim())
-    .find((c) => c.startsWith('terry_auth'))
-    .replace('terry_auth=', '');
+  const verifier = getVerifierFromCookie(document.cookie);
   const response = await fetch('http://localhost:4000/oauth2/token', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ code: params.code, verifier })
   });
-  console.log(await response.text());
+  const result = await response.json();
+  return result;
+}
+
+function getVerifierFromCookie(cookie): string {
+  const verifier = cookie
+    .split(';')
+    .map((s) => s.trim())
+    .find((c) => c.startsWith('terry_auth'))
+    .replace('terry_auth=', '');
+  return verifier;
 }
 
 /**
@@ -50,7 +59,7 @@ export class Verifier {
   }
 
   async getChallenge(): string {
-    let sha = await sha256(this.array);
+    const sha = await sha256(this.array);
     console.log('sha', sha);
     return toBase64(sha);
   }
