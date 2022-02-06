@@ -90,3 +90,16 @@ fn get_bucket() -> Bucket {
     let bucket = Bucket::new("terrylockett-sso", region, credentials).unwrap();
     return bucket;
 }
+
+pub fn get_allowed_scopes(_user: &str) -> std::collections::HashSet<String> {
+    let mut allowed_scopes = std::collections::HashSet::<String>::new();
+    allowed_scopes.insert("openid".to_string());
+    allowed_scopes.insert("profile".to_string());
+    allowed_scopes.insert("email".to_string());
+    allowed_scopes.insert("read_data".to_string());
+    return allowed_scopes;
+}
+
+pub fn get_audience_restrictions(_user: &str) -> Option<std::collections::HashSet<String>> {
+    None
+}

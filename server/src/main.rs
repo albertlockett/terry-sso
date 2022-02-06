@@ -81,8 +81,28 @@ async fn handle_login(params: web::Form<PasswordFormValues>) -> HttpResponse {
         return HttpResponse::Found().header("Location", location).finish();
     }
 
-    println!("scopes = {:?}", session.scopes);
-    println!("audience = {:?}", session.audience);
+    // check that the user has requested allowed scopes
+    let allowed_scopes = dao::get_allowed_scopes(&params.username);
+    let mut not_allowed_scope_requested = false;
+    session.scopes.split(",")
+        .for_each(|scope| {
+            not_allowed_scope_requested |= !allowed_scopes.contains(&scope.to_string());
+        });
+    if not_allowed_scope_requested {
+        let callback_url = format!("{}?error=not_allowed_scopes", session.callback_url.clone());
+        return HttpResponse::Found()
+            .header("Location", callback_url)
+            .finish();
+    }
+
+    // check that the audience is allowed
+    let audience_restrictions = dao::get_audience_restrictions(&params.username);
+    if audience_restrictions.is_some() && !audience_restrictions.unwrap().contains(&session.audience) {
+        let callback_url = format!("{}?error=not_allowed_audience", session.callback_url.clone());
+        return HttpResponse::Found()
+            .header("Location", callback_url)
+            .finish();
+    }
 
     // store the code and redirect user w/ code
     let code = format!("{}", Uuid::new_v4());
@@ -124,14 +144,12 @@ async fn handle_token(params: web::Json<TokenFormValues>) -> HttpResponse {
     let session_id = code.session_id;
     let session_op = dao::get_session(&session_id).await;
     if session_op.is_none() {
-        // biffed ITTTTTTT
         return HttpResponse::BadRequest()
             .header("content-type", "application/json")
             .body("{\"error\": \"invalid_state\"}");
     }
     let session = session_op.unwrap();
 
-    // TODO need to fix all this stuff ...
     let challenge = session.challenge;
     if !is_valid_verifier(&params.verifier, &challenge) {
         return HttpResponse::BadRequest()
@@ -152,3 +170,5 @@ fn is_valid_verifier(verifier: &str, challenge: &str) -> bool {
     let verifier_hashed_b64 = base64::encode(hasher.finalize());
     verifier_hashed_b64 == challenge
 }
+
+
