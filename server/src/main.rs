@@ -84,10 +84,9 @@ async fn handle_login(params: web::Form<PasswordFormValues>) -> HttpResponse {
     // check that the user has requested allowed scopes
     let allowed_scopes = dao::get_allowed_scopes(&params.username);
     let mut not_allowed_scope_requested = false;
-    session.scopes.split(",")
-        .for_each(|scope| {
-            not_allowed_scope_requested |= !allowed_scopes.contains(&scope.to_string());
-        });
+    session.scopes.split(",").for_each(|scope| {
+        not_allowed_scope_requested |= !allowed_scopes.contains(&scope.to_string());
+    });
     if not_allowed_scope_requested {
         let callback_url = format!("{}?error=not_allowed_scopes", session.callback_url.clone());
         return HttpResponse::Found()
@@ -97,8 +96,13 @@ async fn handle_login(params: web::Form<PasswordFormValues>) -> HttpResponse {
 
     // check that the audience is allowed
     let audience_restrictions = dao::get_audience_restrictions(&params.username);
-    if audience_restrictions.is_some() && !audience_restrictions.unwrap().contains(&session.audience) {
-        let callback_url = format!("{}?error=not_allowed_audience", session.callback_url.clone());
+    if audience_restrictions.is_some()
+        && !audience_restrictions.unwrap().contains(&session.audience)
+    {
+        let callback_url = format!(
+            "{}?error=not_allowed_audience",
+            session.callback_url.clone()
+        );
         return HttpResponse::Found()
             .header("Location", callback_url)
             .finish();
@@ -157,7 +161,7 @@ async fn handle_token(params: web::Json<TokenFormValues>) -> HttpResponse {
             .body("{\"error\": \"invalid_verifier\"}");
     }
 
-    let access_token = token::generate_token(&code.user);
+    let access_token = token::generate_token(&code.user, &session.audience, &session.scopes);
     HttpResponse::Ok()
         .header("content-type", "application/json")
         .body(format!("{{\"access_token\": \"{}\"}}", access_token))
@@ -170,5 +174,3 @@ fn is_valid_verifier(verifier: &str, challenge: &str) -> bool {
     let verifier_hashed_b64 = base64::encode(hasher.finalize());
     verifier_hashed_b64 == challenge
 }
-
-

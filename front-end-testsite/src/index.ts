@@ -26,11 +26,11 @@ async function handleError(error) {
   });
 }
 
-const button = document.getElementById('login');
-button.addEventListener(
+const loginButton = document.getElementById('login');
+loginButton.addEventListener(
   'click',
   function () {
-    const scopes = ['openid', 'email', 'read_data2'];
+    const scopes = ['openid', 'email', 'read_data'];
     sdk.doLogin({
       callbackUrl: `${window.location.origin}/callback`,
       scopes,
@@ -39,3 +39,21 @@ button.addEventListener(
   },
   false
 );
+
+const button = document.getElementById('button');
+button.addEventListener(
+  'click',
+  async function () {
+    const res = await fetch('http://localhost:4001/v1/data', {
+      mode: 'cors',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const text = await res.text();
+    console.log(text);
+  },
+  false
+);
+
+console.log('here');
