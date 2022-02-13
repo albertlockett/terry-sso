@@ -12,4 +12,5 @@ There are 4 modules
    - TODO document those
  - `front-end-login` - the front-end application of the login form
  - `front-end-sdk` - a Javascript SDK that can be used on 3rd party websites to handle the flow logic
- - `front-end-testsite` a test site showing how to use the SDK
+ - `front-end-testsite` - a test site showing how to use the SDK
+ - `back-end-testsite` - a test site showing how to implement an API that consumes the token
