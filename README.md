@@ -2,6 +2,8 @@
 
 This is the code for the "Click to Sign in with Terrylockett.ca".
 
+https://albertlockett.ca/articles/terry-sso/terry-sso1
+
 It's an Implementation of the OATH2 PCKE flow for demonstration purposes only. Don't clone this and use it as production code.
 
 There are 4 modules
